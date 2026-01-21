@@ -1,0 +1,98 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints
+BeforeMeeting.ipynb
+Visualization.ipynb
+
+# PyTorch / ML Models
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+*.h5
+*.hdf5
+models/
+checkpoints/
+weights/
+
+# Hugging Face Cache
+.cache/
+.huggingface/
+transformers_cache/
+
+# Data files
+*.csv
+*.tsv
+*.parquet
+*.arrow
+data/
+datasets/
+
+# Results and outputs
+results.json
+*.json.bak
+outputs/
+logs/
+*.log
+
+# Visualization outputs
+*.png
+*.pdf
+*.svg
+fig*.png
+fig*.pdf
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# CUDA
+*.cuda
+
+# Weights files (large model checkpoints)
+final_*.pt
+*_weights.pt
+
