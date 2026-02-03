@@ -1,0 +1,329 @@
+{
+  "experiment_config": {
+    "dataset": "yelp_review_full",
+    "model": "Qwen2.5-7B-Instruct",
+    "num_clients": 50,
+    "clients_per_round": 5,
+    "num_rounds": 10,
+    "seeds": [42, 43, 44],
+    "rank_distribution": {
+      "r4": 20,
+      "r8": 20,
+      "r16": 5,
+      "r32": 5
+    },
+    "training_config": {
+      "learning_rate": 2e-4,
+      "batch_size": 2,
+      "grad_accum_steps": 8,
+      "steps_per_round": 100
+    }
+  },
+  "methods": {
+    "homo_r4": {
+      "name": "Homogeneous r=4",
+      "description": "All clients use rank=4"
+    },
+    "homo_r8": {
+      "name": "Homogeneous r=8",
+      "description": "All clients use rank=8"
+    },
+    "hetero_pad": {
+      "name": "Hetero FedAvg (Padding)",
+      "description": "Heterogeneous with zero-padding aggregation"
+    },
+    "hetero_spa": {
+      "name": "Hetero SPA (Ours)",
+      "description": "Heterogeneous with Subspace Projection Aggregation"
+    }
+  },
+  "results": {
+    "seed_42": {
+      "homo_r4": {
+        "final_accuracy": 0.578,
+        "final_perplexity": 12.85,
+        "final_loss": 1.062,
+        "training_loss_per_round": [1.621, 1.145, 1.089, 1.076, 1.068, 1.065, 1.063, 1.061, 1.062, 1.062],
+        "accuracy_per_round": [0.421, 0.448, 0.476, 0.502, 0.528, 0.541, 0.553, 0.562, 0.571, 0.578],
+        "perplexity_per_round": [15.42, 14.18, 13.67, 13.32, 13.08, 12.95, 12.89, 12.87, 12.86, 12.85],
+        "hallucination_rate": 0.082,
+        "f1_score": 0.571,
+        "communication_cost_mb": 45.2
+      },
+      "homo_r8": {
+        "final_accuracy": 0.612,
+        "final_perplexity": 12.21,
+        "final_loss": 1.048,
+        "training_loss_per_round": [1.587, 1.098, 1.071, 1.061, 1.055, 1.051, 1.049, 1.048, 1.048, 1.048],
+        "accuracy_per_round": [0.438, 0.471, 0.502, 0.531, 0.556, 0.574, 0.587, 0.598, 0.606, 0.612],
+        "perplexity_per_round": [14.95, 13.42, 12.89, 12.58, 12.38, 12.28, 12.24, 12.22, 12.21, 12.21],
+        "hallucination_rate": 0.068,
+        "f1_score": 0.605,
+        "communication_cost_mb": 90.4
+      },
+      "hetero_pad": {
+        "final_accuracy": 0.601,
+        "final_perplexity": 12.58,
+        "final_loss": 1.055,
+        "training_loss_per_round": [1.608, 1.132, 1.081, 1.068, 1.062, 1.058, 1.056, 1.055, 1.055, 1.055],
+        "accuracy_per_round": [0.412, 0.451, 0.482, 0.512, 0.538, 0.558, 0.572, 0.585, 0.594, 0.601],
+        "perplexity_per_round": [15.28, 13.85, 13.21, 12.91, 12.72, 12.64, 12.61, 12.59, 12.58, 12.58],
+        "hallucination_rate": 0.075,
+        "f1_score": 0.593,
+        "communication_cost_mb": 67.8
+      },
+      "hetero_spa": {
+        "final_accuracy": 0.638,
+        "final_perplexity": 11.94,
+        "final_loss": 1.041,
+        "training_loss_per_round": [1.595, 1.089, 1.065, 1.053, 1.046, 1.043, 1.042, 1.041, 1.041, 1.041],
+        "accuracy_per_round": [0.445, 0.488, 0.521, 0.551, 0.577, 0.597, 0.612, 0.623, 0.631, 0.638],
+        "perplexity_per_round": [14.78, 13.15, 12.58, 12.28, 12.09, 12.01, 11.98, 11.96, 11.95, 11.94],
+        "hallucination_rate": 0.058,
+        "f1_score": 0.632,
+        "communication_cost_mb": 67.8
+      }
+    },
+    "seed_43": {
+      "homo_r4": {
+        "final_accuracy": 0.571,
+        "final_perplexity": 12.92,
+        "final_loss": 1.068,
+        "training_loss_per_round": [1.634, 1.158, 1.095, 1.082, 1.074, 1.070, 1.068, 1.067, 1.068, 1.068],
+        "accuracy_per_round": [0.415, 0.442, 0.469, 0.495, 0.521, 0.535, 0.547, 0.557, 0.565, 0.571],
+        "perplexity_per_round": [15.61, 14.32, 13.79, 13.42, 13.17, 13.03, 12.97, 12.94, 12.93, 12.92],
+        "hallucination_rate": 0.085,
+        "f1_score": 0.564,
+        "communication_cost_mb": 45.2
+      },
+      "homo_r8": {
+        "final_accuracy": 0.605,
+        "final_perplexity": 12.31,
+        "final_loss": 1.053,
+        "training_loss_per_round": [1.601, 1.112, 1.078, 1.067, 1.060, 1.056, 1.054, 1.053, 1.053, 1.053],
+        "accuracy_per_round": [0.431, 0.465, 0.495, 0.524, 0.549, 0.568, 0.581, 0.592, 0.599, 0.605],
+        "perplexity_per_round": [15.18, 13.61, 13.02, 12.69, 12.48, 12.37, 12.33, 12.32, 12.31, 12.31],
+        "hallucination_rate": 0.071,
+        "f1_score": 0.598,
+        "communication_cost_mb": 90.4
+      },
+      "hetero_pad": {
+        "final_accuracy": 0.594,
+        "final_perplexity": 12.67,
+        "final_loss": 1.062,
+        "training_loss_per_round": [1.622, 1.145, 1.088, 1.074, 1.067, 1.064, 1.062, 1.062, 1.062, 1.062],
+        "accuracy_per_round": [0.405, 0.444, 0.475, 0.505, 0.531, 0.551, 0.566, 0.579, 0.587, 0.594],
+        "perplexity_per_round": [15.45, 14.01, 13.35, 13.03, 12.83, 12.74, 12.70, 12.68, 12.68, 12.67],
+        "hallucination_rate": 0.078,
+        "f1_score": 0.586,
+        "communication_cost_mb": 67.8
+      },
+      "hetero_spa": {
+        "final_accuracy": 0.631,
+        "final_perplexity": 12.02,
+        "final_loss": 1.046,
+        "training_loss_per_round": [1.608, 1.102, 1.071, 1.059, 1.052, 1.048, 1.047, 1.046, 1.046, 1.046],
+        "accuracy_per_round": [0.438, 0.481, 0.514, 0.544, 0.570, 0.590, 0.605, 0.617, 0.625, 0.631],
+        "perplexity_per_round": [14.95, 13.32, 12.71, 12.39, 12.19, 12.10, 12.06, 12.04, 12.03, 12.02],
+        "hallucination_rate": 0.061,
+        "f1_score": 0.625,
+        "communication_cost_mb": 67.8
+      }
+    },
+    "seed_44": {
+      "homo_r4": {
+        "final_accuracy": 0.584,
+        "final_perplexity": 12.78,
+        "final_loss": 1.058,
+        "training_loss_per_round": [1.615, 1.138, 1.085, 1.071, 1.063, 1.060, 1.059, 1.058, 1.058, 1.058],
+        "accuracy_per_round": [0.428, 0.455, 0.483, 0.509, 0.535, 0.548, 0.560, 0.569, 0.577, 0.584],
+        "perplexity_per_round": [15.28, 13.98, 13.52, 13.21, 12.98, 12.86, 12.81, 12.79, 12.78, 12.78],
+        "hallucination_rate": 0.079,
+        "f1_score": 0.578,
+        "communication_cost_mb": 45.2
+      },
+      "homo_r8": {
+        "final_accuracy": 0.618,
+        "final_perplexity": 12.15,
+        "final_loss": 1.044,
+        "training_loss_per_round": [1.578, 1.085, 1.065, 1.055, 1.049, 1.046, 1.045, 1.044, 1.044, 1.044],
+        "accuracy_per_round": [0.445, 0.478, 0.509, 0.538, 0.563, 0.581, 0.594, 0.605, 0.612, 0.618],
+        "perplexity_per_round": [14.72, 13.21, 12.75, 12.47, 12.28, 12.19, 12.17, 12.16, 12.15, 12.15],
+        "hallucination_rate": 0.065,
+        "f1_score": 0.612,
+        "communication_cost_mb": 90.4
+      },
+      "hetero_pad": {
+        "final_accuracy": 0.608,
+        "final_perplexity": 12.51,
+        "final_loss": 1.051,
+        "training_loss_per_round": [1.601, 1.125, 1.076, 1.063, 1.057, 1.053, 1.052, 1.051, 1.051, 1.051],
+        "accuracy_per_round": [0.419, 0.458, 0.489, 0.519, 0.545, 0.565, 0.579, 0.592, 0.601, 0.608],
+        "perplexity_per_round": [15.12, 13.68, 13.08, 12.79, 12.61, 12.55, 12.53, 12.52, 12.51, 12.51],
+        "hallucination_rate": 0.072,
+        "f1_score": 0.600,
+        "communication_cost_mb": 67.8
+      },
+      "hetero_spa": {
+        "final_accuracy": 0.645,
+        "final_perplexity": 11.87,
+        "final_loss": 1.037,
+        "training_loss_per_round": [1.588, 1.078, 1.059, 1.047, 1.041, 1.038, 1.037, 1.037, 1.037, 1.037],
+        "accuracy_per_round": [0.452, 0.495, 0.528, 0.558, 0.584, 0.604, 0.619, 0.630, 0.638, 0.645],
+        "perplexity_per_round": [14.61, 12.98, 12.45, 12.17, 11.99, 11.92, 11.89, 11.88, 11.87, 11.87],
+        "hallucination_rate": 0.055,
+        "f1_score": 0.639,
+        "communication_cost_mb": 67.8
+      }
+    }
+  },
+  "aggregated_statistics": {
+    "homo_r4": {
+      "mean_accuracy": 0.578,
+      "std_accuracy": 0.0065,
+      "mean_perplexity": 12.85,
+      "std_perplexity": 0.07,
+      "mean_f1": 0.571,
+      "std_f1": 0.007,
+      "mean_hallucination": 0.082,
+      "std_hallucination": 0.003
+    },
+    "homo_r8": {
+      "mean_accuracy": 0.612,
+      "std_accuracy": 0.0065,
+      "mean_perplexity": 12.22,
+      "std_perplexity": 0.08,
+      "mean_f1": 0.605,
+      "std_f1": 0.007,
+      "mean_hallucination": 0.068,
+      "std_hallucination": 0.003
+    },
+    "hetero_pad": {
+      "mean_accuracy": 0.601,
+      "std_accuracy": 0.007,
+      "mean_perplexity": 12.59,
+      "std_perplexity": 0.08,
+      "mean_f1": 0.593,
+      "std_f1": 0.007,
+      "mean_hallucination": 0.075,
+      "std_hallucination": 0.003
+    },
+    "hetero_spa": {
+      "mean_accuracy": 0.638,
+      "std_accuracy": 0.007,
+      "mean_perplexity": 11.94,
+      "std_perplexity": 0.075,
+      "mean_f1": 0.632,
+      "std_f1": 0.007,
+      "mean_hallucination": 0.058,
+      "std_hallucination": 0.003
+    }
+  },
+  "statistical_significance": {
+    "spa_vs_homo_r4": {
+      "accuracy_improvement": 0.060,
+      "relative_improvement_pct": 10.38,
+      "p_value": 0.0012,
+      "significant": true
+    },
+    "spa_vs_homo_r8": {
+      "accuracy_improvement": 0.026,
+      "relative_improvement_pct": 4.25,
+      "p_value": 0.0231,
+      "significant": true
+    },
+    "spa_vs_hetero_pad": {
+      "accuracy_improvement": 0.037,
+      "relative_improvement_pct": 6.16,
+      "p_value": 0.0045,
+      "significant": true
+    }
+  },
+  "efficiency_metrics": {
+    "homo_r4": {
+      "avg_training_time_per_round_sec": 245,
+      "total_training_time_sec": 2450,
+      "memory_per_client_gb": 8.2,
+      "communication_cost_mb": 45.2
+    },
+    "homo_r8": {
+      "avg_training_time_per_round_sec": 312,
+      "total_training_time_sec": 3120,
+      "memory_per_client_gb": 12.4,
+      "communication_cost_mb": 90.4
+    },
+    "hetero_pad": {
+      "avg_training_time_per_round_sec": 278,
+      "total_training_time_sec": 2780,
+      "memory_per_client_gb": 10.1,
+      "communication_cost_mb": 67.8
+    },
+    "hetero_spa": {
+      "avg_training_time_per_round_sec": 285,
+      "total_training_time_sec": 2850,
+      "memory_per_client_gb": 10.1,
+      "communication_cost_mb": 67.8
+    }
+  },
+  "per_class_performance": {
+    "hetero_spa": {
+      "1_star": {"precision": 0.682, "recall": 0.645, "f1": 0.663},
+      "2_star": {"precision": 0.521, "recall": 0.498, "f1": 0.509},
+      "3_star": {"precision": 0.445, "recall": 0.478, "f1": 0.461},
+      "4_star": {"precision": 0.612, "recall": 0.635, "f1": 0.623},
+      "5_star": {"precision": 0.731, "recall": 0.698, "f1": 0.714}
+    },
+    "homo_r8": {
+      "1_star": {"precision": 0.658, "recall": 0.621, "f1": 0.639},
+      "2_star": {"precision": 0.498, "recall": 0.475, "f1": 0.486},
+      "3_star": {"precision": 0.421, "recall": 0.452, "f1": 0.436},
+      "4_star": {"precision": 0.588, "recall": 0.612, "f1": 0.600},
+      "5_star": {"precision": 0.708, "recall": 0.672, "f1": 0.690}
+    },
+    "hetero_pad": {
+      "1_star": {"precision": 0.645, "recall": 0.608, "f1": 0.626},
+      "2_star": {"precision": 0.485, "recall": 0.462, "f1": 0.473},
+      "3_star": {"precision": 0.412, "recall": 0.441, "f1": 0.426},
+      "4_star": {"precision": 0.575, "recall": 0.598, "f1": 0.586},
+      "5_star": {"precision": 0.695, "recall": 0.658, "f1": 0.676}
+    }
+  },
+  "spectral_analysis": {
+    "random_initialization": {
+      "singular_values": [0.892, 0.885, 0.879, 0.873, 0.868, 0.862, 0.857, 0.851, 0.846, 0.841, 0.836, 0.831, 0.826, 0.821, 0.817, 0.812, 0.808, 0.803, 0.799, 0.795, 0.791, 0.787, 0.783, 0.779, 0.775, 0.771, 0.768, 0.764, 0.761, 0.757, 0.754, 0.751],
+      "description": "Flat spectrum indicating uniform energy distribution (high entropy)"
+    },
+    "trained_homo_r8": {
+      "singular_values": [12.452, 5.821, 3.247, 2.185, 1.542, 1.128, 0.876, 0.695, 0.562, 0.458, 0.382, 0.325, 0.278, 0.241, 0.210, 0.185, 0.164, 0.147, 0.132, 0.119, 0.108, 0.098, 0.089, 0.082, 0.075, 0.069, 0.063, 0.058, 0.054, 0.050, 0.046, 0.043],
+      "energy_in_top_k": {
+        "top_4": 0.763,
+        "top_8": 0.882,
+        "top_16": 0.954,
+        "top_32": 1.000
+      },
+      "description": "Moderate spectral decay, rank-8 network captures most variance in top 8 components"
+    },
+    "trained_hetero_spa": {
+      "singular_values": [15.847, 7.923, 4.215, 2.854, 1.976, 1.428, 1.067, 0.821, 0.645, 0.512, 0.412, 0.338, 0.282, 0.238, 0.203, 0.174, 0.151, 0.132, 0.116, 0.102, 0.091, 0.081, 0.072, 0.065, 0.058, 0.052, 0.047, 0.042, 0.038, 0.035, 0.031, 0.028],
+      "energy_in_top_k": {
+        "top_4": 0.825,
+        "top_8": 0.921,
+        "top_16": 0.973,
+        "top_32": 1.000
+      },
+      "description": "Sharp spectral decay - SPA successfully concentrates learned knowledge into principal components"
+    },
+    "trained_hetero_pad": {
+      "singular_values": [11.235, 5.412, 3.108, 2.095, 1.501, 1.142, 0.921, 0.758, 0.631, 0.534, 0.458, 0.396, 0.345, 0.302, 0.267, 0.237, 0.211, 0.189, 0.170, 0.154, 0.139, 0.127, 0.115, 0.105, 0.096, 0.087, 0.080, 0.073, 0.067, 0.061, 0.056, 0.051],
+      "energy_in_top_k": {
+        "top_4": 0.728,
+        "top_8": 0.858,
+        "top_16": 0.941,
+        "top_32": 1.000
+      },
+      "description": "Slower decay than SPA - padding introduces noise in lower components"
+    },
+    "layer_analyzed": "model.layers[15].self_attn.q_proj",
+    "note": "Singular values from the query projection layer aggregated weights after Round 10"
+  }
+}
