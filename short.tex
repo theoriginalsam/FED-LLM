@@ -5,16 +5,15 @@
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
-\usepackage{booktabs} % Loaded once here
+\usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{subcaption}
 \usepackage{hyperref}
-\usepackage{tabularx} % Loaded once here
+\usepackage{tabularx}
 
 \begin{document}
 
 \title{Heterogeneous Decentralized Fine-Tuning of Large Language Models}
-
 
 \author{
 \IEEEauthorblockN{Samir Poudel}
@@ -27,7 +26,7 @@ sp2ai@mtmail.mtsu.edu}
 \maketitle
 
 \begin{abstract}
-The
+Federated Learning (FL) enables privacy-preserving training of Large Language Models (LLMs) but struggles with system heterogeneity, particularly when clients possess varying computational capabilities. Standard aggregation methods require uniform model architectures, forcing a ``lowest common denominator'' approach that throttles high-end devices. We propose Subspace Projection Aggregation (SPA), a novel framework that addresses this by treating client updates as overlapping subspaces. Using Singular Value Decomposition (SVD), SPA projects high-rank updates from capable clients into optimal lower-rank approximations for resource-constrained peers. Experiments on the Yelp Review dataset using Qwen2.5-7B show that SPA achieves 63.8\% accuracy, outperforming homogeneous baselines by 2.6\% while reducing communication costs by 25\%. Our approach effectively distills knowledge from heterogeneous sources, proving that device diversity can be an asset rather than a liability in federated LLM fine-tuning.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -37,85 +36,80 @@ Federated Learning, Large Language Models, LoRA, Heterogeneity, SVD, Subspace Le
 \section{Introduction}
 \label{sec:intro}
 
-Large Language Models (LLMs) have fundamentally transformed Natural Language Processing. However, deploying them in sensitive domains like healthcare or finance creates significant privacy issues, as regulations like GDPR and HIPAA prevent centralizing sensitive data. 
+Large Language Models (LLMs) have fundamentally transformed Natural Language Processing, demonstrating emergent abilities across diverse tasks~\cite{brown2020language, touvron2023llama, achiam2023gpt}. However, deploying them in sensitive domains like healthcare or finance creates significant privacy issues. Regulations like GDPR~\cite{voigt2017gdpr} and HIPAA prevent centralizing sensitive data, while recent studies have shown that LLMs can memorize training data, rendering them vulnerable to extraction attacks~\cite{carlini2021extracting, shokri2017membership}.
 
-Recent incidents underscore the critical importance of privacy-preserving approaches. In 2025, the Grok Chat Leak exposed over 370,000 private conversations through centralized server vulnerabilities, demonstrating the inherent risks of collecting and storing sensitive user data in centralized locations. Such breaches highlight why data governance frameworks mandate strict controls on personal information processing.
+Recent incidents underscore the critical importance of privacy-preserving approaches. In 2025, the Grok Chat Leak exposed over 370,000 private conversations through centralized server vulnerabilities, demonstrating the inherent risks of collecting and storing sensitive user data~\cite{burgess2025grok}. Such breaches highlight why data governance frameworks mandate strict controls on personal information processing.
 
-Federated Learning (FL) offers a solution by keeping data on-device, but it faces a critical hurdle: \textbf{system heterogeneity}. In real-world networks, not all devices are equal; a high-end server may exist alongside a resource-constrained smartphone. When using Parameter-Efficient Fine-Tuning like LoRA, this leads to a LoRA rank mismatch. Traditional FL requires identical ranks, forcing the network to exclude weaker devices or throttle powerful ones. 
+Federated Learning (FL) offers a solution by keeping data on-device~\cite{mcmahan2017fedavg, kairouz2021advances}. However, standard FL faces a critical hurdle: \textbf{system heterogeneity}~\cite{li2020federated, li2020fedprox}. In real-world networks, not all devices are equal; a high-end server may exist alongside a resource-constrained smartphone. When using Parameter-Efficient Fine-Tuning (PEFT) techniques like Low-Rank Adaptation (LoRA)~\cite{hu2021lora}, this leads to a LoRA rank mismatch. Traditional FL requires identical ranks, forcing the network to either exclude weaker devices (dropping data) or throttle powerful ones (wasting capacity)~\cite{diao2020heterofl, horvath2021fjord}.
 
-Figure~\ref{fig:motivation} illustrates these challenges. The problem has three key dimensions: (1) \textit{Data Governance} concerns, exemplified by the Grok Chat Leak where centralized server vulnerabilities exposed 370k+ private conversations; (2) \textit{Hardware Mismatch}, where high-tier devices with 48GB VRAM can support LoRA rank 32 while edge-tier devices with only 8GB VRAM are limited to rank 4; and (3) the need for a robust solution that can handle this heterogeneity.
+Figure~\ref{fig:motivation} illustrates these challenges. The problem has three key dimensions: (1) \textit{Data Governance} concerns; (2) \textit{Hardware Mismatch}, where high-tier devices with 48GB VRAM can support LoRA rank 32 while edge-tier devices with only 8GB VRAM are limited to rank 4; and (3) the need for a robust aggregation strategy. While Zero-Padding allows mismatched ranks to be averaged, it introduces significant \textbf{truncation loss and sparsity noise}, diluting the global model's intelligence. 
+
+To bridge this gap, we propose the SPA architecture. By utilizing Singular Value Decomposition (SVD), specifically leveraging the properties of the Eckart-Young-Mirsky theorem for optimal low-rank approximation~\cite{eckart1936approximation}, SPA treats updates as subspaces. This ensures that knowledge from high-rank clients is distilled into low-rank clients without the artifacts of padding. As shown in Figure~\ref{fig:motivation}, our approach operates through three key phases: (1) \textbf{Reconstruct} the full weight updates $\Delta W = B \times A$, (2) perform \textbf{SVD Analysis} to decompose the aggregated update as $W = U\Sigma V^T$, and (3) \textbf{Project \& Distill} via dynamic rank mapping to extract principal subspaces tailored to each client's hardware constraints.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.95\columnwidth]{Moti.pdf}
-\caption{\textbf{Heterogeneous Decentralized Fine-Tuning: Privacy-Preserving LLM Adaptation.} The figure illustrates the problem and solution landscape: \textit{(The Problem)}: Data governance challenges highlighted by the Grok Chat Leak (2025) where 370k+ private chats were exposed via centralized server vulnerabilities, alongside hardware mismatch between high-tier devices (Rank 32, 48GB VRAM) and edge-tier devices (Rank 4, 8GB VRAM). \textit{(The Solution)}: Our decentralized federated flow with three phases: (1) Reconstruct: $\Delta W = B \times A$, (2) SVD Analysis: $W = U\Sigma V^T$, and (3) Project \& Distill through dynamic rank mapping.}
+\caption{\textbf{Heterogeneous Decentralized Fine-Tuning.} (1) \textit{Data Governance} challenges~\cite{burgess2025grok}; (2) \textit{Hardware Mismatch} between high-tier and edge-tier devices; and (3) \textit{SPA Solution}: Reconstruct, SVD Analysis, and Project \& Distill.}
 \label{fig:motivation}
 \end{figure}
-
-While Zero-Padding allows mismatched ranks to be averaged, it introduces significant \textbf{truncation loss and sparsity noise}, diluting the global model's intelligence. To bridge this gap, we propose the SPA architecture. By utilizing Singular Value Decomposition (SVD), SPA treats updates as subspaces, ensuring that knowledge from high-rank clients is distilled into low-rank clients without the artifacts of padding. As shown in Figure~\ref{fig:motivation}, our approach operates through three key phases: (1) \textbf{Reconstruct} the full weight updates $\Delta W = B \times A$ from each client's LoRA matrices, (2) perform \textbf{SVD Analysis} to decompose the aggregated update as $W = U\Sigma V^T$, and (3) \textbf{Project \& Distill} via dynamic rank mapping to extract principal subspaces tailored to each client's hardware constraints.
 
 \section{Background and Related Work}
 \label{sec:background}
 
 \subsection{Federated Learning for Large Language Models}
 
-Federated Learning was originally proposed by McMahan et al.~\cite{mcmahan2017fedavg} for training neural networks on mobile devices. The standard FedAvg algorithm involves clients performing local training steps on their private data, after which a central server averages the model updates. While effective for smaller models, scaling this approach to LLMs presents distinct challenges.
+Federated Learning was originally proposed by McMahan et al.~\cite{mcmahan2017fedavg} for training neural networks on mobile devices. While effective for smaller models, scaling this approach to LLMs presents distinct challenges regarding communication overhead and memory constraints~\cite{zhang2025surveyfedlora, zhuang2023foundation}.
 
-Full fine-tuning of billion-parameter models is computationally prohibitive for most edge devices. Additionally, LLMs are susceptible to catastrophic forgetting, where fine-tuning on new data degrades general language capabilities. Recent efforts to adapt FL for LLMs~\cite{chen2023fedllm} typically utilize adapter-based training. However, these approaches usually assume homogeneous client architectures, which limits their applicability in realistic, heterogeneous environments~\cite{yao2024fedllm, zhang2025surveyfedlora}.
+Full fine-tuning of billion-parameter models is computationally prohibitive for most edge devices. Additionally, LLMs are susceptible to catastrophic forgetting. Recent efforts to adapt FL for LLMs, such as FedIT~\cite{zhang2023fedit} and FATE-LLM~\cite{fan2023fate}, typically utilize adapter-based training. However, these approaches usually assume homogeneous client architectures, which limits their applicability in realistic, heterogeneous environments~\cite{yao2024fedllm, chen2023fedllm}.
 
-\subsection{Low-Rank Adaptation (LoRA)}
+\subsection{Low-Rank Adaptation (LoRA) and PEFT}
 
-LoRA~\cite{hu2021lora} facilitates the fine-tuning of LLMs on consumer-grade hardware. It decomposes the weight update $\Delta W$ into two low-rank matrices, $B$ and $A$. The forward pass is defined as:
+To mitigate the cost of fine-tuning, Parameter-Efficient Fine-Tuning (PEFT) methods have gained traction, including Adapters~\cite{houlsby2019parameter}, Prefix Tuning~\cite{li2021prefix}, and P-Tuning~\cite{liu2022p}. Among these, LoRA~\cite{hu2021lora} has become the de facto standard for consumer-grade hardware. It decomposes the weight update $\Delta W$ into two low-rank matrices, $B$ and $A$. The forward pass is defined as:
 \begin{equation}
 h = W_0 x + \Delta W x = W_0 x + \frac{\alpha}{r} BA x
 \end{equation}
 where $W_0$ represents the frozen pre-trained weights.
 
-The rank $r$ determines the trade-off between model capacity and memory usage. A lower $r$ reduces VRAM requirements but limits expressiveness, while a higher $r$ increases capacity at the cost of computational resources. Dettmers et al.~\cite{dettmers2024qlora} have demonstrated that relatively low ranks (4-8) can achieve competitive performance on many downstream tasks.
+Recent variants like QLoRA~\cite{dettmers2024qlora} integrate quantization to further reduce memory usage, while AdaLoRA~\cite{zhang2023adalora} and DyLoRA~\cite{valipour2023dylora} explore dynamic rank allocation during central training. However, applying these dynamic rank concepts in a \textit{decentralized, federated} setting remains an open research problem.
+
+\subsection{Handling Heterogeneity in Federated Learning}
+
+System heterogeneity is a well-known challenge in FL. Existing solutions often employ \textbf{Client Selection} strategies, such as FedProx~\cite{li2020fedprox} and FedNova~\cite{wang2020fednova}, which adjust aggregation based on client resources or training progress. 
+
+For model heterogeneity, HeteroFL~\cite{diao2020heterofl} and Fjord~\cite{horvath2021fjord} introduced the concept of training sub-models on edge devices. However, these methods were designed for CNNs and do not directly translate to the specific matrix-decomposition structure of LoRA. More recently, approaches like FlexLoRA~\cite{bai2024flexlora}, FLoRA~\cite{wang2024flora}, and SLoRA~\cite{babakniya2024slora} have attempted to bridge this gap, though they often rely on complex stacking mechanisms or heuristic padding.
+
+\subsection{Singular Value Decomposition in Machine Learning}
+
+SVD factorizes a matrix $W$ into three components ($W = U \Sigma V^T$). In Deep Learning, SVD has been extensively used for model compression~\cite{denton2014exploiting, yu2017compressing}. In our proposed framework, SVD serves as a spectral filter to remove noise from the aggregated model, similar to techniques used in subspace learning~\cite{balzano2010online}.
 
 \begin{table*}[t]
 \centering
 \small 
-\caption{Comparison of Recent Works on Heterogeneous LoRA in Federated Fine-Tuning of Large Models. "Heterogeneous Ranks" indicates support for different LoRA ranks across clients. "Aggregation Method" describes how dimensional mismatch is handled.}
+\caption{Comparison of Recent Works on Heterogeneous LoRA in Federated Fine-Tuning.}
 \label{tab:lit_survey}
 \begin{tabularx}{\textwidth}{l c c X X} 
 \toprule
-\textbf{Work} & \textbf{Year} & \textbf{Hetero. Ranks} & \textbf{Aggregation Method} & \textbf{Scope / Key Limitation} \\
+\textbf{Work} & \textbf{Year} & \textbf{Hetero.} & \textbf{Aggregation Method} & \textbf{Limitation} \\
 \midrule
-FedAvg + LoRA & 2017/21 & No & Direct averaging (requires same rank) & Assumes homogeneous clients; excludes low-resource devices~\cite{mcmahan2017fedavg, hu2021lora} \\
+FedAvg~\cite{mcmahan2017fedavg} & 2017 & No & Direct averaging & Assumes homogeneous clients \\
 \addlinespace
-Zero-Padding & -- & Yes & Zero-pad low-rank to max rank then average & Simple baseline; suffers from sparsity artifacts and noise \\
+Zero-Padding & -- & Yes & Zero-pad low-rank to max rank & Sparsity artifacts and noise \\
 \addlinespace
-FLoRA & 2024 & Yes & Stacking-based aggregation & Focuses on stacking; may not explicitly leverage principal subspaces~\cite{wang2024flora} \\
+FLoRA~\cite{wang2024flora} & 2024 & Yes & Stacking-based aggregation & Focuses on stacking \\
 \addlinespace
-FlexLoRA & 2024 & Yes & Full $\Delta W = BA$ aggregation + SVD redistribution & Very similar motivation; handles task + resource heterogeneity~\cite{bai2024flexlora} \\
+FlexLoRA~\cite{bai2024flexlora} & 2024 & Yes & Full $\Delta W$ + SVD redist. & Similar motivation \\
 \addlinespace
-HeLoRA & 2025 & Yes & Context-based padding + adaptive aggregation & Relies on padding variant; less emphasis on spectral filtering~\cite{fan2025helora} \\
+HeLoRA~\cite{fan2025helora} & 2025 & Yes & Context-based padding & Relies on padding variant \\
 \addlinespace
-ILoRA & 2025 & Yes & Concatenated QR + decomposition & Addresses initialization instability; uses QR vs SVD~\cite{zhou2025ilora} \\
+ILoRA~\cite{zhou2025ilora} & 2025 & Yes & QR decomposition & Addresses initialization \\
 \addlinespace
-\textbf{SPA (Ours)} & -- & \textbf{Yes} & \textbf{Full $\Delta W$ avg $\to$ SVD $\to$ top-$r$ projection} & \textbf{Leverages SVD for optimal low-rank approx. + noise removal} \\
+\textbf{SPA (Ours)} & -- & \textbf{Yes} & \textbf{Full $\Delta W \to$ SVD $\to$ top-$r$} & \textbf{Optimal low-rank approx.} \\
 \bottomrule
 \end{tabularx}
 \end{table*}
 
-\subsection{Handling Heterogeneity in Federated Learning}
-
-System heterogeneity is a well-known challenge in FL. Existing solutions often employ \textbf{Client Selection} strategies, such as FedProx~\cite{li2020fedprox} and FedNova~\cite{wang2020fednova}, which adjust aggregation based on client resources or training progress. However, these methods typically still require identical model architectures. Other approaches utilize \textbf{Model Compression} or \textbf{Split Learning}, but these can introduce complexity and potential privacy risks~\cite{zhang2025surveyfedlora}.
-
-Our work addresses heterogeneity by allowing clients to select a rank appropriate for their hardware, while the server manages the aggregation of dimensionally mismatched updates through subspace projection.
-
-\subsection{Singular Value Decomposition in Machine Learning}
-
-SVD factorizes a matrix $W$ into three components:
-\begin{equation}
-W = U \Sigma V^T
-\end{equation}
-The matrix $\Sigma$ contains singular values that represent the magnitude of variance along each dimension. Large singular values correspond to significant signal, while small values often represent noise. In our proposed framework, SVD serves two purposes: it acts as a mechanism to translate between different rank updates and as a filter to remove noise from the aggregated model~\cite{bai2024flexlora}.
-
 \section{Methodology}
 \label{sec:methodology}
-
 
 \subsection{Problem Formulation}
 
@@ -205,7 +199,7 @@ Distributing the square root of the singular values ensures numerical stability.
 \end{figure*}
 
 \begin{figure*}[t]
-\centerline{\includegraphics[width=1.5\textwidth]{SVD.pdf}}
+\centerline{\includegraphics[width=1\textwidth]{SPA.png}}
 \caption{Detailed workflow of Subspace Projection Aggregation across five phases.}
 \label{fig:spa_workflow}
 \end{figure*}
@@ -231,11 +225,11 @@ We compare SPA against two primary categories of baselines:
 
 \subsection{Dataset and Distribution}
 
-We evaluated our method on the Yelp Review Full dataset~\cite{zhang2015yelp}, which consists of 650,000 samples across 5 sentiment classes. To simulate a realistic non-IID environment, we partitioned the data across 50 clients using a Dirichlet distribution with concentration parameter $\alpha = 0.5$.
+We evaluated our method on the Yelp Review Full dataset~\cite{zhang2015yelp}, which consists of 650,000 samples across 5 sentiment classes. To simulate a realistic non-IID environment, we partitioned the data across 50 clients using a Dirichlet distribution ($\alpha = 0.5$), following standard FL benchmark protocols~\cite{hsu2019measuring, caldas2018leaf}.
 
 \subsection{Model Configuration}
 
-We utilized the Qwen2.5-7B-Instruct model in bfloat16 precision. LoRA was applied to the query and value projection layers. The client network was heterogeneous: 20 clients utilized rank-4 (low resource), 20 utilized rank-8 (mid resource), and 10 utilized rank-16 or rank-32 (high resource). Training proceeded for 10 rounds with 100 steps per round, using an NVIDIA RTX A6000 for simulation.
+We utilized the Qwen2.5-7B-Instruct model~\cite{bai2023qwen, yang2024qwen2} in bfloat16 precision. Qwen was selected for its superior performance on reasoning tasks compared to similarly sized LLaMA models. LoRA was applied to the query and value projection layers. The client network was heterogeneous: 20 clients utilized rank-4 (low resource), 20 utilized rank-8 (mid resource), and 10 utilized rank-16 or rank-32 (high resource). Optimization was performed using AdamW~\cite{loshchilov2017decoupled}.
 
 \subsection{Metrics}
 
@@ -292,13 +286,13 @@ Table~\ref{tab:main_results} summarizes the performance across all metrics.
 \label{tab:main_results}
 \begin{tabular}{lccccccc}
 \toprule
-\textbf{Method} & \textbf{Accuracy} & \textbf{Perplexity} & \textbf{F1 Score} & \textbf{Hallucination} & \textbf{Comm. Cost} & \textbf{Training Time} \\
- & (\%) & & & Rate (\%) & (MB/round) & (minutes) \\
+\textbf{Method} & \textbf{Accuracy} & \textbf{Perplexity} & \textbf{F1 Score} & \textbf{Hallucination} & \textbf{Comm. Cost} & \textbf{Time} \\
+ & (\%) & & & Rate (\%) & (MB/round) & (min) \\
 \midrule
 Homo r=4 & 57.8$\pm$0.7 & 12.85$\pm$0.07 & 0.571$\pm$0.007 & 8.2 & 45.2 & 40.8 \\
 Homo r=8 & 61.2$\pm$0.7 & 12.22$\pm$0.08 & 0.605$\pm$0.007 & 6.8 & 90.4 & 52.0 \\
 Hetero-Pad & 60.1$\pm$0.7 & 12.59$\pm$0.08 & 0.593$\pm$0.007 & 7.5 & 67.8 & 46.3 \\
-\textbf{Hetero-SPA (Ours)} & \textbf{63.8$\pm$0.7} & \textbf{11.94$\pm$0.08} & \textbf{0.632$\pm$0.007} & \textbf{5.8} & \textbf{67.8} & \textbf{47.5} \\
+\textbf{Hetero-SPA} & \textbf{63.8$\pm$0.7} & \textbf{11.94$\pm$0.08} & \textbf{0.632$\pm$0.007} & \textbf{5.8} & \textbf{67.8} & \textbf{47.5} \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -403,7 +397,7 @@ Future research directions include extending SPA to models beyond 7 billion para
 The SPA framework demonstrates that federated learning can achieve both inclusivity and performance. By leveraging mathematical principles of subspace learning and spectral decomposition, we enable practical deployment of federated LLM fine-tuning in heterogeneous environments, from healthcare networks with mixed infrastructure to edge computing systems with diverse hardware capabilities. This work provides both a concrete solution to rank heterogeneity and a conceptual foundation for future research in geometry-aware federated optimization.
 
 \section{Acknowledgments}
-
+This research was supported by the Computational and Data Science Department at Middle Tennessee State University. We thank the anonymous reviewers for their constructive feedback.
 
 \bibliographystyle{IEEEtran}
 \bibliography{reference}
