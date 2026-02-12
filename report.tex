@@ -1,0 +1,75 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{letterpaper, margin=1in}
+\usepackage{xcolor}
+\usepackage{enumitem}
+
+% Defining a professional dark green
+\definecolor{darkgreen}{rgb}{0.0, 0.5, 0.0}
+
+\title{Update on SPA Paper Edits}
+\author{Samir Poudel}
+\date{February 11, 2026}
+
+\begin{document}
+
+\maketitle
+
+
+\begin{itemize}
+    \item \textbf{Section I:} I am working on this. Meanwhile I have attached the pdf with other edits. Since the paper's due is near, I would appreciate check on these edits while I work on this section.
+    \item \textbf{Section III-D (Metrics):} I updated this to include privacy and security metrics. 
+    \textit{``\textcolor{darkgreen}{First, the Membership Inference Attack (MIA) AUC measures the success rate... Second, we calculate the update entropy... Higher entropy suggests that the updates contain richer, more diverse information.}''}
+
+    \item \textbf{Section V-B (Results Analysis):} Corrected a math inconsistency regarding the high-resource client pool. 
+    \textit{``In our experimental setup, \textcolor{red}{10\%} \textcolor{darkgreen}{20\%} of the clients (10 out of 50) utilize high-tier adapters...''}
+
+    \item \textbf{Section V-C (Perplexity):} I expanded this to be more thorough. 
+    \textit{``\textcolor{darkgreen}{This result indicates that SPA maintains superior probabilistic calibration and preserves general language modeling capabilities more effectively than competing methods.}''}
+
+    \item \textbf{Section V-D (Security Results):} Clarified the role of entropy in information theory. 
+    \textit{``\textcolor{red}{Having higher entropy is bad} \textcolor{darkgreen}{While in traditional communication systems high entropy can denote undesirable noise, in the context of federated updates, it serves as a proxy for information density.}''}
+
+    \item \textbf{Section V-F (Per-Class Performance):} Elaborated on the reasons for performance in intermediate categories. 
+    \textit{``\textcolor{darkgreen}{Small models often miss the tiny differences in words that separate a 'bad' review from an 'okay' one... SPA's ability to 'denoise' helps the model ignore individual human mistakes.}''}
+
+    \item \textbf{Section V-H (Statistical Significance):} Detailed the significance of our p-values. 
+    \textit{``\textcolor{darkgreen}{The low p-values prove that SPA's gains aren't just luck, but come from SVD filtering out the 'clash' between inconsistent client updates.}''}
+
+    \item \textbf{Section VI (Challenges, Limitation, and Future Work):} Combined the sections to link current limits to upcoming goals. 
+    \textit{``\textcolor{red}{Limitations} \textcolor{darkgreen}{Challenges, Limitation, and Future Work... Future work will investigate hierarchical projection methods and randomized SVD algorithms.}''}
+\end{itemize}
+
+\textbf{Note:} I've also rewritten the figure captions to be much longer and more descriptive. Actual updates to the plots and graphics are still pending.
+
+% -------------------------------------------------------
+\section*{ Paper Titles}
+% -------------------------------------------------------
+
+
+\begin{enumerate}[leftmargin=*, label=\textbf{\arabic*.}]
+
+    \item $(\star)$ \textbf{SPA: Subspace Projection Aggregation for Heterogeneous Federated Fine-Tuning of Large Language Models} \\
+    
+    \item $(\star)$ \textbf{HeteroLoRA: Federated Fine-Tuning of Large Language Models Across Heterogeneous Rank Constraints} \\
+    
+    \item $(\star)$ \textbf{Rank-Adaptive Federated LoRA: A Subspace Projection Framework for Heterogeneous Edge Devices} \\
+   
+    \item \textbf{Beyond Lowest Common Denominator: SVD-Based Rank-Adaptive Federated Learning for LLMs} \\
+    
+    \item \textbf{Subspace-Aware Federated Adaptation: Bridging LoRA Rank Heterogeneity via Singular Value Decomposition} \\
+   
+    \item \textbf{FedSVD: Communication-Efficient Heterogeneous Federated Fine-Tuning via Spectral Projection} \\
+   
+    \item \textbf{Turning Device Diversity into an Asset: Subspace Projection for Heterogeneous Federated LLM Fine-Tuning} \\
+    
+    \item \textbf{Spectral Aggregation for Privacy-Preserving Federated Fine-Tuning of Large Language Models} \\
+    
+    \item \textbf{FedRankAdapt: Optimal Low-Rank Projection for Heterogeneous Federated LLM Adaptation} \\
+   
+    \item \textbf{Knowledge Distillation Across Heterogeneous LoRA Ranks via Subspace Projection in Federated Learning} \\
+   
+\end{enumerate}
+
+\end{document}
