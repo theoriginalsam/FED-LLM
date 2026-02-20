@@ -13,10 +13,11 @@
 \usepackage{hyperref}
 \usepackage{tabularx}
 \usepackage{balance}
+\usepackage{placeins}  
 
 \begin{document}
 
-\title{Heterogeneous Decentralized Fine-Tuning of Large Language Models}
+\title{SPA: Subspace Projection Aggregation for Privacy-Preserving Heterogeneous Federated Fine-Tuning of Large Language Model}
 
 \author{
 \IEEEauthorblockN{Samir Poudel}
@@ -35,44 +36,29 @@ Federated Learning (FL) enables privacy-preserving training of Large Language Mo
 \begin{IEEEkeywords}
 Federated Learning, Large Language Models, LoRA, Heterogeneity, SVD, Subspace Learning
 \end{IEEEkeywords}
-
 \section{Introduction and Motivation}
 \label{sec:intro}
 
-Large Language Models (LLMs) have fundamentally transformed Natural Language Processing, demonstrating emergent abilities across diverse tasks~\cite{brown2020language, touvron2023llama, achiam2023gpt}. However, deploying them in sensitive domains like healthcare or finance creates significant privacy issues. Regulations like GDPR~\cite{voigt2017gdpr} and HIPAA prevent centralizing sensitive data, while recent studies have shown that LLMs can memorize training data, rendering them vulnerable to extraction attacks~\cite{carlini2021extracting, shokri2017membership}.
+Large Language Models (LLMs) have fundamentally transformed Natural Language Processing, demonstrating emergent abilities across diverse tasks~\cite{brown2020language, touvron2023llama, achiam2023gpt}. However, their integration into sensitive sectors like healthcare, law, and finance is currently bottlenecked by severe privacy and security risks inherent in centralized architectures.
 
-Recent incidents underscore the critical importance of privacy-preserving approaches. In 2025, the Grok Chat Leak exposed over 370,000 private conversations through centralized server vulnerabilities~\cite{burgess2025grok}. This is not an isolated incident. In 2023, Samsung employees accidentally leaked confidential software code by pasting it into ChatGPT for debugging~\cite{samsung2023leak}. Furthermore, researchers have proven that large language models can memorize and reveal private user data, including emails and phone numbers, even when safety filters are active~\cite{nasr2023extraction}. Such breaches highlight why data governance frameworks mandate strict controls on personal information processing.
+\subsection{Privacy Challenges in Centralized LLM Training}
+The traditional paradigm of centralizing massive datasets for training and fine-tuning is increasingly untenable. Data governance frameworks, such as GDPR~\cite{voigt2017gdpr} and HIPAA, mandate strict controls on personal information. Beyond regulatory hurdles, centralized LLMs are susceptible to "data leakage" through training. Recent studies show that LLMs can memorize verbatim strings from their training sets, making them vulnerable to extraction attacks~\cite{carlini2021extracting, shokri2017membership}.
 
-Federated Learning (FL) offers a solution by keeping data on-device~\cite{mcmahan2017fedavg, kairouz2021advances}. To make training feasible on these resource-constrained devices, Parameter-Efficient Fine-Tuning (PEFT) methods are used, with Low-Rank Adaptation (LoRA) being the most prominent technique to reduce memory usage~\cite{hu2021lora}. However, a critical hurdle remains: system heterogeneity. In real-world networks, not all devices are equal; a high-end server may exist alongside a resource-constrained smartphone. This leads to a LoRA rank mismatch, where different devices require different model configurations to function.
+The severity of these risks is evidenced by a growing number of industry "hacks" and data exposures. In 2025, the \textit{Grok Chat Leak} exposed over 370,000 private conversations due to centralized server vulnerabilities~\cite{burgess2025grok}. Legal challenges have also mounted against transcription services like Otter.ai, which faced a class-action lawsuit in 2025 alleging that the company utilized private, sensitive meeting recordings to train its proprietary models without explicit user consent~\cite{npr2025otter}. Furthermore, systemic vulnerabilities in AI interfaces were highlighted when a critical flaw in Meta AI was discovered to be leaking private chatbot prompts and responses to unauthorized users, effectively broadcasting confidential user intent~\cite{tomsguide2025meta}.
 
-\subsection{The Heterogeneity Problem}
-The disparity between client devices creates a fundamental incompatibility in standard Federated Learning. Traditional aggregation methods assume that all clients share the exact same model architecture. When this assumption is broken, several critical issues arise:
+This followed the 2023 Samsung incident, where engineers inadvertently leaked proprietary source code by using ChatGPT for debugging~\cite{samsung2023leak}. Furthermore, researchers have demonstrated that even with safety filters active, LLMs can be manipulated into revealing private user data, including emails and phone numbers, through targeted extraction queries~\cite{nasr2023extraction}. These incidents prove that as long as data is centralized or transmitted to a primary server, the risk of catastrophic exposure remains a constant threat.
 
-\textbf{Hardware Mismatch:} Real-world networks are diverse. High-tier clients with 48GB VRAM can easily support a LoRA rank of 32, allowing them to learn complex features. In contrast, edge-tier devices (like smartphones or older laptops) with only 8GB VRAM are strictly limited to rank 4 or 8. If we force the entire network to use the lowest rank to accommodate the weakest devices, we waste the potential of the powerful ones.
+\subsection{Federated Learning as a Privacy-Preserving Alternative}
+Federated Learning (FL) has emerged as a compelling alternative, allowing models to be trained on-site where the data originates, be it a hospital server or a user's smartphone~\cite{mcmahan2017fedavg, kairouz2021advances}. By only transmitting model updates rather than raw data, FL provides a robust layer of privacy. To make fine-tuning these billion-parameter models feasible on local hardware, researchers utilize Parameter-Efficient Fine-Tuning (PEFT)~\cite{houlsby2019peft}. Low-Rank Adaptation (LoRA) is the most widely adopted technique here, as it drastically reduces the memory footprint by only updating low-rank decomposition matrices~\cite{hu2021lora}.
+\subsection{Problem Motivation: The Challenge of System Heterogeneity}
+While FL and LoRA solve the privacy and scale issues in theory, they encounter a major practical hurdle: \textbf{System Heterogeneity}. In any real-world FL network, participating devices are not uniform. A high-end workstation with 48GB of VRAM might participate in the same training round as a budget smartphone with only 8GB of VRAM. 
 
-\textbf{Aggregation Failure:} Standard FL relies on averaging weight updates (FedAvg). However, a rank-4 update and a rank-32 update have different matrix dimensions. They cannot be directly summed or averaged. This geometric mismatch forces system designers to choose between excluding weak clients (which introduces bias) or throttling strong clients (which reduces intelligence).
+This disparity creates a "Rank Mismatch" problem. A high-tier device can comfortably handle a LoRA rank of $r=32$, capturing complex nuances in the local data. However, the edge device is physically capped at a rank of $r=4$ or $r=8$ due to hardware constraints. Under standard FL protocols (like FedAvg), updates from these two devices cannot be aggregated because their weight matrices have different dimensions. This leaves system designers with a "lose-lose" choice: either exclude the resource-constrained devices (losing their unique data) or throttle the entire network to the lowest common denominator (stunting the intelligence of the powerful devices). 
 
-\textbf{The Noise of Padding:} A common workaround is ``Zero-Padding,'' where smaller matrices are filled with zeros to match the size of larger ones. However, this introduces sparsity and noise. Averaging a dense, information-rich matrix with a sparse, zero-padded matrix dilutes the learned signals, often leading to a global model that performs worse than the individual local models.
-
-\textbf{Data Governance vs. Utility:} The ultimate goal is to utilize data from all sources without centralization. If we drop low-resource clients because they cannot handle high ranks, we lose access to their unique local data. This defeats the purpose of Federated Learning, which aims to learn from a diverse population of users.
-
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=0.95\columnwidth]{Up2.pdf}
-    \caption{The fundamental challenge of system heterogeneity in Federated Learning. High-tier devices (e.g., servers with 48GB VRAM) and edge-tier devices (e.g., smartphones with 8GB VRAM) have disparate memory constraints that dictate different LoRA ranks. Standard aggregation fails because weight matrices of different ranks cannot be directly averaged, typically forcing the network to adopt the lowest rank and thereby throttling the intelligence of capable devices.}
-    \label{fig:motivation}
-    \end{figure}
+\textbf{The Inefficiency of Current Workarounds:} Current attempts to bridge this gap, such as "Zero-Padding" (filling smaller matrices with zeros), often introduce significant noise. Averaging a dense, information-rich update with a sparse, padded one dilutes the global model’s performance, often resulting in a global model that underperforms compared to individual local models. There is an urgent need for an aggregation method that preserves the richness of high-rank updates while remaining compatible with low-resource participants.
 
 \subsection{Our Contribution}
-We propose Subspace Projection Aggregation (SPA), a novel framework designed to resolve the dimensionality mismatch in heterogeneous federated learning. Instead of forcing a ``lowest common denominator'' approach, SPA treats different model updates as overlapping subspaces. By leveraging Singular Value Decomposition (SVD), we can extract the most important information from high-rank updates and project it into a format that low-rank devices can understand. This effectively distills knowledge from powerful clients to weaker ones without the artifacts of zero-padding.
-
-Our main contributions include:
-\begin{itemize}
-    \item \textbf{Subspace-based aggregation} that utilizes SVD to optimally project high-dimensional updates into lower-dimensional spaces, minimizing information loss during aggregation.
-    \item \textbf{Dynamic rank adaptation} that allows the global model to be customized for each client's specific hardware constraints, ensuring no device is excluded due to memory limitations.
-    \item \textbf{Enhanced privacy and utility} demonstrated through experiments on the Yelp Review dataset, where SPA achieves 63.8\% accuracy (outperforming homogeneous baselines) while maintaining strict privacy standards as verified by Membership Inference Attacks.
-    \item \textbf{Communication efficiency} improvements, reducing bandwidth usage by 25\% compared to standard high-rank baselines by transmitting only the necessary singular components.
-\end{itemize}
+We propose \textbf{Subspace Projection Aggregation (SPA)}, a framework designed to resolve dimensionality mismatch without sacrificing model utility. Instead of simple padding, SPA treats heterogeneous updates as overlapping subspaces. By leveraging Singular Value Decomposition (SVD), we extract the principal components of high-rank updates and project them into the dimensions required by low-rank devices. This ensures that knowledge is distilled from powerful clients to weaker ones seamlessly, maximizing the utility of the entire federated ecosystem.
 
 \section{Background and Related Work}
 \label{sec:background}
@@ -220,7 +206,7 @@ Distributing the square root of the singular values ensures numerical stability.
     \end{figure*}
 
     \begin{figure*}[t]
-        \centerline{\includegraphics[width=.9\textwidth]{Up3.pdf}}
+        \centerline{\includegraphics[width=.9\textwidth]{SPA.png}}
         \caption{The five-phase operational workflow of SPA. Phase 1 and 2 handle the selection and local optimization. Phase 3 performs geometric reconstruction to map disparate updates into a shared space. Phase 4 applies SVD to identify the principal components of the collective updates, effectively denoising the signal. Phase 5 redistributes these optimized components back to clients, ensuring each device receives a model optimized for its specific rank capacity.}
         \label{fig:spa_workflow}
         \end{figure*}
@@ -278,14 +264,29 @@ Figure~\ref{fig:training_loss} illustrates the training loss over 10 rounds.
 \end{figure}
 All methods demonstrated stable convergence. However, SPA achieved the lowest final loss (1.041), surpassing the standard $r=8$ baseline (1.048) and the $r=4$ baseline (1.062). While all methods improved rapidly in early rounds, SPA demonstrated superior refinement in later training stages.
 
+\begin{figure}[t]
+    \centerline{\includegraphics[width=\columnwidth]{fig2_accuracy_evolution.png}}
+    \caption{Test accuracy evolution across communication rounds. The dashed horizontal line at 44\% represents the zero-shot baseline. SPA consistently outperforms all baselines, achieving $63.8\% \pm 0.7\%$ final accuracy compared to $61.2\% \pm 0.7\%$ for Homogeneous $r=8$.}
+    \label{fig:accuracy}
+    \end{figure}
+
+
 \subsection{Accuracy and Knowledge Distillation}
 
+\begin{figure*}[!t]
+    \centerline{\includegraphics[width=0.9\textwidth]{fig4_final_performance.png}}
+    \caption{Final performance comparison across accuracy, perplexity, and F1 score. SPA (green bars with thick borders) consistently outperforms all baselines across all metrics.}
+    \label{fig:final_performance}
+    \end{figure*}
+    
+    \begin{figure*}[!t]
+    \centerline{\includegraphics[width=0.9\textwidth]{fig5_efficiency.png}}
+    \caption{Efficiency trade-offs showing accuracy versus training time (left) and communication cost (right). SPA achieves the best accuracy-efficiency balance.}
+    \label{fig:efficiency}
+    \end{figure*}
+
 Figure~\ref{fig:accuracy} presents the test accuracy evolution.
-\begin{figure}[t]
-\centerline{\includegraphics[width=\columnwidth]{fig2_accuracy_evolution.png}}
-\caption{Test accuracy evolution across communication rounds. The dashed horizontal line at 44\% represents the zero-shot baseline. SPA consistently outperforms all baselines, achieving $63.8\% \pm 0.7\%$ final accuracy compared to $61.2\% \pm 0.7\%$ for Homogeneous $r=8$.}
-\label{fig:accuracy}
-\end{figure}
+
 From a zero-shot baseline of 44\%, SPA improved to \textbf{63.8\%}. Comparative performance is as follows:
 \begin{itemize}
     \item \textbf{Homo $r=8$:} 61.2\%. SPA outperformed the standard homogeneous approach by 2.6 percentage points ($p=0.023$).
@@ -307,6 +308,7 @@ Perplexity measures the model's predictive uncertainty.
 SPA achieved a final perplexity of 11.94, a statistically significant improvement over the $r=8$ baseline (12.22) and the Hetero-Pad approach (12.59). This result indicates that SPA maintains superior probabilistic calibration and preserves general language modeling capabilities more effectively than competing methods. 
 
 The performance gap suggests that naive padding or fixed-rank constraints introduce noise into the model's transition probabilities, leading to higher uncertainty during token prediction. By utilizing SVD, SPA performs an implicit spectral regularization that retains the most informative directions of the weight updates while discarding low-variance components that often represent local over-fitting or gradient noise. Furthermore, the lower perplexity demonstrates that distilling high-rank knowledge into low-rank clients does not degrade the model's linguistic coherence, but rather provides a more robust estimate of the global data distribution across the heterogeneous network.
+
 \subsection{Security and Spectral Denoising}
 \label{sec:security}
 
@@ -356,47 +358,37 @@ Table~\ref{tab:main_results} summarizes the performance across all metrics.
     The efficiency of SPA extends beyond simple bandwidth reduction; it promotes system-level inclusivity by enabling resource-constrained edge devices to participate in the federated cohort without incurring the computational or memory penalties associated with zero-padding. In our experiments, SPA utilized 25\% less communication bandwidth than the Homogeneous $r=8$ baseline (67.8 MB vs. 90.4 MB), effectively converting hardware diversity from a system liability into a collaborative asset.
 
 Furthermore, we observe a direct relationship between this architectural efficiency and model reliability. SPA demonstrated the lowest hallucination rate (5.8\%) among all tested methods, a significant improvement over the $r=8$ baseline (6.8\%) and the Hetero-Pad approach (7.5\%). This reduction in hallucinations is likely a byproduct of the spectral denoising inherent in the SVD process. By discarding the low-variance singular components that often represent idiosyncratic noise or "client drift" in non-IID settings, SPA prevents the global model from memorizing incoherent gradients that lead to factually incorrect or nonsensical generations. This suggests that the "cleaner" updates provided by SPA not only reduce the communication footprint but also stabilize the model's output, ensuring that high-end servers can uplift the performance of the entire network without propagating high-dimensional noise to the edge.
-\begin{figure*}[t]
-\centerline{\includegraphics[width=0.9\textwidth]{fig4_final_performance.png}}
-\caption{Final performance comparison across accuracy, perplexity, and F1 score. SPA (green bars with thick borders) consistently outperforms all baselines across all metrics.}
-\label{fig:final_performance}
-\end{figure*}
 
-\begin{figure*}[t]
-\centerline{\includegraphics[width=0.9\textwidth]{fig5_efficiency.png}}
-\caption{Efficiency trade-offs showing accuracy versus training time (left) and communication cost (right). SPA achieves the best accuracy-efficiency balance.}
-\label{fig:efficiency}
-\end{figure*}
+
 
 Figure~\ref{fig:efficiency} illustrates the relationship between accuracy and computational cost. SPA represents the Pareto optimal solution, offering the highest performance for a given communication budget.
 
 \subsection{Per-Class Performance}
+\begin{figure}[!t]
+    \centering
+    \includegraphics[width=\columnwidth]{fig6_per_class_performance.png}
+    \caption{Per-class performance breakdown comparing SPA against baselines. Note better separation in intermediate classes.}
+    \label{fig:per_class}
+    \end{figure}
 
 All models performed well on extreme ratings, such as 1-star and 5-star reviews, which use very clear language (e.g., "terrible" vs. "amazing"). However, separating 2-star and 3-star reviews is much harder because the language is often similar and "neutral." As shown in Figure~\ref{fig:per_class}, SPA significantly improved accuracy in these middle categories for several reasons:
 
 \textbf{1) Better Detail (Known):} Small models (rank-4) often miss the tiny differences in words that separate a "bad" review from an "okay" one. SPA takes the "deep thinking" from the powerful rank-32 clients and shares it with the smaller devices. This gives the smaller models the extra detail they need to tell these middle classes apart.
 
-
-
 \textbf{2) Less Confusion (Known):} In federated learning, different users can have conflicting opinions, which confuses the model. SPA uses SVD to organize these opinions. By focusing only on the most important "directions" of the data, it ignores the confusing, low-quality signals that usually make 2-star and 3-star ratings look the same.
 
 \textbf{3) Focusing on Smart Patterns (Potential):} We believe SPA prioritizes complex sentence patterns rather than just single words. While a 5-star review is easy to spot by one word like "perfect," a 3-star review depends on how the sentence is built (e.g., "The food was good, but the service was slow"). SPA's math is better at keeping these complex patterns during training.
 
-\textbf{4) Ignoring Mistakes (Potential):} People often rate things differently; one person’s 2-star is another person’s 3-star. SPA's ability to "denoise" or clean the data helps the model ignore these individual human mistakes and focus on the common patterns shared by most users.
+\textbf{4) Ignoring Mistakes (Potential):} People often rate things differently; one person's 2-star is another person's 3-star. SPA's ability to "denoise" or clean the data helps the model ignore these individual human mistakes and focus on the common patterns shared by most users.
 
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{fig6_per_class_performance.png}
-\caption{Per-class performance breakdown comparing SPA against baselines. Note better separation in intermediate classes.}
-\label{fig:per_class}
-\end{figure}
 
 \subsection{Spectral Analysis and Geometric Alignment}
 
 To validate the theoretical advantages of SVD, we analyzed the singular value spectrum (Figure~\ref{fig:spectral}).
 
-\begin{figure*}[H]
+
+\begin{figure*}[!t]
 \centering
 \includegraphics[width=\textwidth]{fig7_spectral_analysis.png}
 \caption{Singular Value Decomposition Analysis: (Left) The singular value spectrum showing sharp decay, indicating the low-rank nature of updates. (Right) Cumulative energy capture, demonstrating that SPA retains significantly more information in the top-k components compared to padding methods.}
@@ -411,13 +403,12 @@ Furthermore, SVD ensures \textbf{Geometric Alignment}. By aligning updates along
 
 We performed paired t-tests (Table~\ref{tab:significance}) to confirm the reliability of our results across three different random seeds. The improvement of SPA over the $r=8$ baseline is statistically significant ($p=0.023$), and the improvement over the $r=4$ baseline is highly significant ($p=0.0012$).
 
-
-
 There are two primary reasons for this level of significance:
 
 \textbf{1) Reduced Variance (The Reason):} Traditional federated methods, especially those using zero-padding, suffer from high variance because local updates from different clients can "clash," leading to unstable global steps. SPA uses SVD to find the common ground (the principal subspace) between these updates. By focusing on the most important singular vectors, SPA effectively filters out the random variations between training runs, leading to highly consistent and repeatable performance gains.
 
 \textbf{2) Fundamental Capacity Shift (The Significance):} These p-values are important because they prove that the performance boost is not a result of a "lucky" initialization or a specific data partition. A $p < 0.05$ result against the $r=8$ baseline confirms that SPA is successfully extracting extra intelligence from the high-resource clients that standard averaging simply cannot access. Essentially, this result statistically validates our claim that hardware diversity, when managed by SPA, provides a "knowledge uplift" that is impossible to achieve in a homogeneous network.
+
 \begin{table}[t]
 \centering
 \caption{Statistical Significance Tests for SPA vs. Baselines}
@@ -434,12 +425,14 @@ SPA vs. Hetero-Pad & +3.7\% & +6.16\% & 0.0045 \\
 \end{tabular}
 \end{table}
 
+
 \section{Challenges and Future Work}
 \label{sec:limitations}
 
 While SPA provides a robust framework for heterogeneous federated learning, several challenges remain. First, we aim to scale SPA to \textbf{extreme heterogeneity} (e.g., $r=2$ vs. $r=1024$), where subspace overlap may be minimal. This will require investigating hierarchical projections or intermediate "bridge ranks." Additionally, we plan to address \textbf{subspace misalignment} caused by extreme non-IID data shifts through dynamic weighting of client updates based on their geometric alignment with the global trajectory.
 
 Second, the computational overhead of SVD must be optimized for \textbf{ultra-large models} (e.g., 400B+ parameters) using randomized SVD or block-wise decomposition. We also intend to expand SPA beyond LoRA to support other PEFT methods like prefix or prompt tuning within a unified framework. Finally, to improve real-world utility, we will develop \textbf{Asynchronous SPA (A-SPA)} to handle network latency and straggler clients, ensuring the global subspace can be updated continuously without waiting for the entire cohort.
+
 \section{Conclusion}
 This work addressed a fundamental challenge in federated fine-tuning of Large Language Models: how to reconcile system heterogeneity without sacrificing model quality, privacy, or excluding resource-constrained participants. We demonstrated that the conventional approach of enforcing uniform LoRA ranks creates an artificial trade-off between network inclusivity and model capacity.
 
@@ -449,7 +442,7 @@ Across comprehensive experiments on the Yelp Review Full dataset with 50 heterog
 
 Beyond immediate performance improvements, this work establishes a broader principle: heterogeneity in federated learning should be embraced rather than suppressed. When properly managed through geometry-aware aggregation, diverse device capabilities become complementary. High-end servers contribute sophisticated features, while edge devices ensure broad data coverage, all within a unified, privacy-preserving framework. Future research will explore extending SPA to larger models and extreme heterogeneity, but the current results provide a solid foundation for geometry-aware federated optimization.
 
-\IEEEtriggeratref{40}
+\balance
 \bibliographystyle{IEEEtran}
 \bibliography{reference}
 
